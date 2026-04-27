@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/learning_item.dart';
 import '../../../pronunciation/presentation/presentation.dart';
 import '../../../review/presentation/presentation.dart';
@@ -420,7 +421,7 @@ class _QuickStatsRow extends StatelessWidget {
             title: 'Total frases',
             value: totalPhrases.toString(),
             subtitle: 'guardadas',
-            color: const Color(0xFF5B7BFF),
+            color: AppColors.primary,
           ),
         ),
         const SizedBox(width: 10),
@@ -430,7 +431,7 @@ class _QuickStatsRow extends StatelessWidget {
             title: 'Practicadas hoy',
             value: practicedToday.toString(),
             subtitle: 'frases',
-            color: const Color(0xFF2DAD76),
+            color: AppColors.success,
           ),
         ),
         const SizedBox(width: 10),
@@ -440,7 +441,7 @@ class _QuickStatsRow extends StatelessWidget {
             title: 'Racha',
             value: streak.toString(),
             subtitle: 'días seguidos',
-            color: const Color(0xFFF97316),
+            color: AppColors.warning,
           ),
         ),
       ],
@@ -585,7 +586,7 @@ class PhraseCard extends StatelessWidget {
                             context,
                           ).textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: const Color(0xFF18234F),
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

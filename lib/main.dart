@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/di/service_locator.dart';
+import 'core/theme/app_theme.dart';
 import 'features/learning/presentation/presentation.dart';
 import 'features/review/presentation/presentation.dart';
 
@@ -68,10 +69,7 @@ class _EnglishLearningAppState extends State<EnglishLearningApp> {
         navigatorKey: _navigatorKey,
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-          useMaterial3: true,
-        ),
+        theme: AppTheme.light,
         home: const HomeScreen(),
       ),
     );

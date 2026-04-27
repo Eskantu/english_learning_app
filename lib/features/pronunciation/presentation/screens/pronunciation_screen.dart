@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../learning/domain/entities/learning_item.dart';
 import '../cubit/pronunciation_cubit.dart';
 import '../cubit/pronunciation_state.dart';
@@ -300,7 +301,7 @@ class _MainView extends StatelessWidget {
                     label: 'Grabar y evaluar (STT)',
                     icon: Icons.mic_rounded,
                     onPressed: onRecord,
-                    color: const Color(0xFF312E81),
+                    color: AppColors.secondaryDark,
                   ),
                   SizedBox(height: compact ? 14 : 20),
                   _ConsejoCard(compact: compact),
@@ -362,7 +363,7 @@ class _RecordingView extends StatelessWidget {
                   'Graba tu pronunciación',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF18234F),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -397,7 +398,7 @@ class _RecordingView extends StatelessWidget {
                   elapsed,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF18234F),
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -436,8 +437,8 @@ class _RecordingView extends StatelessWidget {
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancelar grabación'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFD64560),
-              side: const BorderSide(color: Color(0xFFD64560)),
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
               padding: const EdgeInsets.symmetric(vertical: 16),
               textStyle: const TextStyle(
                 fontSize: 16,
@@ -698,14 +699,17 @@ class PronunciationCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: <Color>[Color(0xFFEFF2FF), Color(0xFFDDE3FF)],
+          colors: <Color>[
+            AppColors.primaryContainer,
+            AppColors.secondaryContainer,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: const Color(0xFF4F46E5).withValues(alpha: 0.10),
+            color: AppColors.secondary.withValues(alpha: 0.18),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -729,18 +733,20 @@ class PronunciationCard extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.9),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surface.withValues(alpha: 0.92),
                   shape: BoxShape.circle,
                   boxShadow: <BoxShadow>[
                     BoxShadow(
-                      color: const Color(0xFF4F46E5).withValues(alpha: 0.18),
+                      color: AppColors.secondary.withValues(alpha: 0.22),
                       blurRadius: 12,
                     ),
                   ],
                 ),
                 child: const Icon(
                   Icons.volume_up_rounded,
-                  color: Color(0xFF4F46E5),
+                  color: AppColors.secondaryDark,
                   size: 28,
                 ),
               ),
@@ -755,7 +761,7 @@ class PronunciationCard extends StatelessWidget {
                     : Theme.of(context).textTheme.displaySmall)
                 ?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF18234F),
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
           ),
           const SizedBox(height: 6),
@@ -763,7 +769,7 @@ class PronunciationCard extends StatelessWidget {
             '¿Cómo suena esta frase?',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: const Color(0xFF48568E),
+              color: AppColors.secondaryDark,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -772,7 +778,7 @@ class PronunciationCard extends StatelessWidget {
             width: 40,
             height: 3,
             decoration: BoxDecoration(
-              color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
+              color: AppColors.secondary.withValues(alpha: 0.45),
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -803,7 +809,7 @@ class RecordingWidget extends StatelessWidget {
                 width: 110,
                 height: 110,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4F46E5).withValues(alpha: 0.15),
+                  color: AppColors.secondary.withValues(alpha: 0.20),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -815,18 +821,22 @@ class RecordingWidget extends StatelessWidget {
       child: Container(
         width: 80,
         height: 80,
-        decoration: const BoxDecoration(
-          color: Color(0xFF4F46E5),
+        decoration: BoxDecoration(
+          color: AppColors.secondaryDark,
           shape: BoxShape.circle,
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: Color(0x334F46E5),
+              color: AppColors.secondary.withValues(alpha: 0.22),
               blurRadius: 20,
               spreadRadius: 2,
             ),
           ],
         ),
-        child: const Icon(Icons.mic_rounded, color: Colors.white, size: 38),
+        child: Icon(
+          Icons.mic_rounded,
+          color: Theme.of(context).colorScheme.onSecondary,
+          size: 38,
+        ),
       ),
     );
   }
@@ -862,7 +872,7 @@ class _WaveformWidget extends StatelessWidget {
               height: height,
               margin: const EdgeInsets.symmetric(horizontal: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF4F46E5).withValues(alpha: 0.6),
+                color: AppColors.secondary.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(99),
               ),
             );
@@ -889,9 +899,9 @@ class ResultWidget extends StatelessWidget {
   final bool compact;
 
   Color get _scoreColor => switch (result.feedback) {
-    PronunciationFeedback.correct => const Color(0xFF2DAD76),
-    PronunciationFeedback.almostCorrect => const Color(0xFFE49A00),
-    PronunciationFeedback.incorrect => const Color(0xFFD64560),
+    PronunciationFeedback.correct => AppColors.success,
+    PronunciationFeedback.almostCorrect => AppColors.warning,
+    PronunciationFeedback.incorrect => AppColors.error,
   };
 
   String get _headline => switch (result.feedback) {
@@ -984,7 +994,7 @@ class ResultWidget extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF18234F),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           SizedBox(height: compact ? 16 : 20),
@@ -1151,7 +1161,7 @@ class _ActionButton extends StatelessWidget {
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white54,
+                  color: AppColors.surfaceContainerHighest,
                 ),
               )
               : Icon(icon),
@@ -1161,7 +1171,7 @@ class _ActionButton extends StatelessWidget {
         disabledBackgroundColor: (color ??
                 Theme.of(context).colorScheme.primary)
             .withValues(alpha: 0.6),
-        foregroundColor: Colors.white,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         padding: const EdgeInsets.symmetric(vertical: 16),
         textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

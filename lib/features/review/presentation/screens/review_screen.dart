@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../learning/presentation/cubit/learning_items_cubit.dart';
 import '../../domain/entities/review_quality.dart';
 import '../cubit/review_cubit.dart';
@@ -143,8 +144,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             title: 'No recordé',
                             subtitle: 'No la recordaba en absoluto',
                             icon: Icons.sentiment_dissatisfied_rounded,
-                            background: const Color(0xFFFFF1F4),
-                            foreground: const Color(0xFFD64560),
+                            background: AppColors.error.withValues(alpha: 0.10),
+                            foreground: AppColors.error,
                             onTap: () => _submitAnswer(ReviewQuality.forgot),
                             compact: compact,
                           ),
@@ -153,8 +154,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             title: 'Más o menos',
                             subtitle: 'La recordaba con dificultad',
                             icon: Icons.sentiment_neutral_rounded,
-                            background: const Color(0xFFFFF8E6),
-                            foreground: const Color(0xFFE49A00),
+                            background: AppColors.warning.withValues(
+                              alpha: 0.12,
+                            ),
+                            foreground: AppColors.warning,
                             onTap: () => _submitAnswer(ReviewQuality.partial),
                             compact: compact,
                           ),
@@ -163,8 +166,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             title: 'Fácil',
                             subtitle: 'La recordé sin problema',
                             icon: Icons.sentiment_very_satisfied_rounded,
-                            background: const Color(0xFFECFAF3),
-                            foreground: const Color(0xFF2DAD76),
+                            background: AppColors.success.withValues(
+                              alpha: 0.12,
+                            ),
+                            foreground: AppColors.success,
                             onTap: () => _submitAnswer(ReviewQuality.easy),
                             compact: compact,
                           ),
@@ -270,8 +275,11 @@ class _ReviewFlashcard extends StatelessWidget {
       color: Colors.transparent,
       child: Ink(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: <Color>[Color(0xFFEFF2FF), Color(0xFFE8ECFF)],
+          gradient: LinearGradient(
+            colors: const <Color>[
+              AppColors.primaryContainer,
+              AppColors.secondaryContainer,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -301,7 +309,9 @@ class _ReviewFlashcard extends StatelessWidget {
                   alignment: Alignment.topCenter,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withValues(alpha: 0.90),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: IconButton(
@@ -320,7 +330,7 @@ class _ReviewFlashcard extends StatelessWidget {
                           : Theme.of(context).textTheme.displaySmall)
                       ?.copyWith(
                         fontWeight: FontWeight.w800,
-                        color: const Color(0xFF18234F),
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
                 const SizedBox(height: 8),
@@ -328,7 +338,7 @@ class _ReviewFlashcard extends StatelessWidget {
                   '¿Qué significa esta frase?',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: const Color(0xFF48568E),
+                    color: AppColors.secondaryDark,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -447,7 +457,7 @@ class _AnswerOptionCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.black.withValues(alpha: 0.58),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -479,7 +489,7 @@ class _MotivationCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F1FF),
+        color: AppColors.surfaceSoft,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
@@ -508,7 +518,7 @@ class _MotivationCard extends StatelessWidget {
                           ? Theme.of(context).textTheme.titleLarge
                           : Theme.of(context).textTheme.headlineSmall)
                       ?.copyWith(
-                        color: const Color(0xFF273884),
+                        color: AppColors.secondaryDark,
                         fontWeight: FontWeight.w800,
                       ),
                 ),
@@ -516,7 +526,7 @@ class _MotivationCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: const Color(0xFF3E4E95),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
