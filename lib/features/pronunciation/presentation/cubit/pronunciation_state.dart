@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 import '../../../learning/domain/entities/learning_item.dart';
 import '../../domain/entities/pronunciation_result.dart';
 
-enum PronunciationStatus { initial, loading, listening, result, failure }
+enum PronunciationStatus { initial, playing, listening, result, failure }
 
 class PronunciationState extends Equatable {
   const PronunciationState({

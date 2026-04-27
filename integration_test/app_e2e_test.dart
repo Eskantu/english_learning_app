@@ -309,11 +309,12 @@ void main() {
       await tester.tap(find.byIcon(Icons.record_voice_over));
       await tester.pumpAndSettle();
 
+        // Empty state uses a plain AppBar with the original label (no accent).
       expect(find.text('Pronunciacion'), findsOneWidget);
       expect(find.text('No hay frases para practicar.'), findsOneWidget);
     });
 
-    testWidgets('tapping pronunciation icon with items shows the dropdown',
+    testWidgets('tapping pronunciation icon with items shows the phrase card',
         (tester) async {
       await _launchApp(tester);
 
@@ -323,7 +324,8 @@ void main() {
       await tester.tap(find.byIcon(Icons.record_voice_over));
       await tester.pumpAndSettle();
 
-      expect(find.text('Pronunciacion'), findsOneWidget);
+      // Refactored UI: header uses accented title, label sits above the dropdown.
+      expect(find.text('Pronunciación'), findsOneWidget);
       expect(find.text('Frase a practicar'), findsOneWidget);
       expect(find.text('Escuchar frase (TTS)'), findsOneWidget);
       expect(find.text('Grabar y evaluar (STT)'), findsOneWidget);

@@ -32,17 +32,45 @@ class PronunciationCubit extends Cubit<PronunciationState> {
     );
   }
 
+  /// Cancels an active recording session without emitting a result.
+  void cancelRecording() {
+    final LearningItem? item = state.selectedItem;
+    if (item == null) return;
+    emit(
+      PronunciationState(
+        status: PronunciationStatus.initial,
+        selectedItem: item,
+      ),
+    );
+  }
+
   Future<void> speakSelectedText() async {
     final LearningItem? item = state.selectedItem;
     if (item == null) {
       return;
     }
+    emit(
+      PronunciationState(
+        status: PronunciationStatus.playing,
+        selectedItem: item,
+      ),
+    );
     try {
       await _textToSpeechService.speak(item.text);
+      // Only reset if still in playing state (user might have started recording).
+      if (state.status == PronunciationStatus.playing) {
+        emit(
+          PronunciationState(
+            status: PronunciationStatus.initial,
+            selectedItem: item,
+          ),
+        );
+      }
     } catch (_) {
       emit(
-        state.copyWith(
+        PronunciationState(
           status: PronunciationStatus.failure,
+          selectedItem: item,
           errorMessage: 'No se pudo reproducir el audio.',
         ),
       );
@@ -66,6 +94,8 @@ class PronunciationCubit extends Cubit<PronunciationState> {
 
     try {
       final String? spoken = await _speechToTextService.listenOnce();
+      // Guard: user may have cancelled while we were listening.
+      if (state.status != PronunciationStatus.listening) return;
       if (spoken == null || spoken.isEmpty) {
         emit(
           state.copyWith(
