@@ -4,13 +4,18 @@
 // Or with a specific device:
 //   flutter test integration_test/app_e2e_test.dart -d <device-id>
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:english_learning_ap/core/di/service_locator.dart';
 import 'package:english_learning_ap/features/learning/data/data.dart';
+import 'package:english_learning_ap/features/learning/domain/entities/learning_item.dart';
+import 'package:english_learning_ap/features/pronunciation/presentation/presentation.dart';
 import 'package:english_learning_ap/main.dart';
 
 import 'fakes/fake_notification_service.dart';
@@ -22,11 +27,60 @@ import 'fakes/fake_text_to_speech_service.dart';
 // ---------------------------------------------------------------------------
 
 const String _testBoxName = 'test_learning_items_box';
+final FakeNotificationService _fakeNotificationService =
+    FakeNotificationService();
+final FakeTextToSpeechService _fakeTextToSpeechService =
+    FakeTextToSpeechService();
+final FakeSpeechToTextService _fakeSpeechToTextService =
+    FakeSpeechToTextService();
 
 /// Initialise the app with a fresh, empty Hive box and fake native services,
 /// then pump the widget tree so the home screen is fully visible.
 Future<void> _launchApp(WidgetTester tester) async {
   await tester.pumpWidget(const EnglishLearningApp());
+  await tester.pumpAndSettle();
+}
+
+Future<void> _addItem(
+  WidgetTester tester, {
+  required String text,
+  required String meaning,
+  String examples = 'Example sentence.',
+}) async {
+  await tester.tap(find.byType(FloatingActionButton));
+  await tester.pumpAndSettle();
+
+  await tester.enterText(
+    find.widgetWithText(TextFormField, 'Texto en ingles'),
+    text,
+  );
+  await tester.enterText(
+    find.widgetWithText(TextFormField, 'Significado en espanol'),
+    meaning,
+  );
+  await tester.enterText(
+    find.widgetWithText(TextFormField, 'Ejemplos (uno por linea)'),
+    examples,
+  );
+
+  await tester.tap(find.text('Guardar'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _openPronunciationWithEmptyItems(WidgetTester tester) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: BlocProvider<PronunciationCubit>(
+        create:
+            (_) => PronunciationCubit(
+              textToSpeechService: ServiceLocator.textToSpeechService,
+              speechToTextService: ServiceLocator.speechToTextService,
+              pronunciationEvaluator: ServiceLocator.pronunciationEvaluator,
+            ),
+        child: const PronunciationScreen(items: <LearningItem>[]),
+      ),
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
@@ -39,15 +93,17 @@ void main() {
 
   setUpAll(() async {
     await ServiceLocator.initForTest(
-      notificationServiceOverride: FakeNotificationService(),
-      textToSpeechServiceOverride: FakeTextToSpeechService(),
-      speechToTextServiceOverride: FakeSpeechToTextService(),
+      notificationServiceOverride: _fakeNotificationService,
+      textToSpeechServiceOverride: _fakeTextToSpeechService,
+      speechToTextServiceOverride: _fakeSpeechToTextService,
     );
   });
 
   setUp(() async {
     final Box<LearningItemModel> box = Hive.box<LearningItemModel>(_testBoxName);
     await box.clear();
+    _fakeTextToSpeechService.reset();
+    _fakeSpeechToTextService.reset();
   });
 
   // -------------------------------------------------------------------------
@@ -57,16 +113,15 @@ void main() {
     testWidgets('shows empty-state message and demo button', (tester) async {
       await _launchApp(tester);
 
-      expect(find.text('No hay frases guardadas.'), findsOneWidget);
-      expect(find.text('Cargar demo rapida'), findsOneWidget);
+      expect(find.text('Agrega tu primera frase'), findsOneWidget);
+      expect(find.text('Cargar demo rápida'), findsOneWidget);
     });
 
     testWidgets('shows app bar with title and action buttons', (tester) async {
       await _launchApp(tester);
 
-      expect(find.text('English Learning'), findsOneWidget);
-      expect(find.byIcon(Icons.record_voice_over), findsOneWidget);
-      expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
+      expect(find.text('Agregar frase'), findsOneWidget);
+      expect(find.text('Cargar demo rápida'), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsOneWidget);
     });
   });
@@ -104,24 +159,12 @@ void main() {
     testWidgets('filling form and saving adds item to home list', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pumpAndSettle();
-
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Texto en ingles'),
-        'Nice to meet you',
+      await _addItem(
+        tester,
+        text: 'Nice to meet you',
+        meaning: 'Mucho gusto',
+        examples: 'Nice to meet you, I am Mario.',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Significado en espanol'),
-        'Mucho gusto',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Ejemplos (uno por linea)'),
-        'Nice to meet you, I am Mario.',
-      );
-
-      await tester.tap(find.text('Guardar'));
-      await tester.pumpAndSettle();
 
       // Back on home screen, item is visible
       expect(find.text('Nice to meet you'), findsOneWidget);
@@ -137,18 +180,8 @@ void main() {
       await _launchApp(tester);
 
       // Add an item first
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Texto en ingles'),
-        'Good morning',
+      await _addItem(tester, text: 'Good morning', meaning: 'Buenos dias',
       );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Significado en espanol'),
-        'Buenos dias',
-      );
-      await tester.tap(find.text('Guardar'));
-      await tester.pumpAndSettle();
 
       // Tap the item to edit it
       await tester.tap(find.text('Good morning'));
@@ -164,18 +197,7 @@ void main() {
       await _launchApp(tester);
 
       // Add an item
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Texto en ingles'),
-        'Old text',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Significado en espanol'),
-        'Texto viejo',
-      );
-      await tester.tap(find.text('Guardar'));
-      await tester.pumpAndSettle();
+      await _addItem(tester, text: 'Old text', meaning: 'Texto viejo');
 
       // Open the edit form
       await tester.tap(find.text('Old text'));
@@ -201,27 +223,16 @@ void main() {
       await _launchApp(tester);
 
       // Add an item
-      await tester.tap(find.byType(FloatingActionButton));
-      await tester.pumpAndSettle();
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Texto en ingles'),
-        'To be deleted',
-      );
-      await tester.enterText(
-        find.widgetWithText(TextFormField, 'Significado en espanol'),
-        'Para borrar',
-      );
-      await tester.tap(find.text('Guardar'));
-      await tester.pumpAndSettle();
+      await _addItem(tester, text: 'To be deleted', meaning: 'Para borrar');
 
       expect(find.text('To be deleted'), findsOneWidget);
 
       // Tap the delete icon
-      await tester.tap(find.byIcon(Icons.delete_outline));
+      await tester.tap(find.byIcon(Icons.delete_outline_rounded));
       await tester.pumpAndSettle();
 
       expect(find.text('To be deleted'), findsNothing);
-      expect(find.text('No hay frases guardadas.'), findsOneWidget);
+      expect(find.text('Agrega tu primera frase'), findsOneWidget);
     });
   });
 
@@ -232,7 +243,7 @@ void main() {
     testWidgets('loading demo items populates the list', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.text('Cargar demo rapida'));
+      await tester.tap(find.text('Cargar demo rápida'));
       await tester.pumpAndSettle();
 
       // All three demo phrases should be visible
@@ -249,11 +260,14 @@ void main() {
     testWidgets('tapping review icon opens the review screen', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.byIcon(Icons.auto_awesome));
+      await tester.tap(find.text('Cargar demo rápida'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
       await tester.pumpAndSettle();
 
       // Either shows cards or "no items" message — both are the ReviewScreen
-      final bool hasCards = tester.any(find.text('No recorde'));
+      final bool hasCards = tester.any(find.text('No recordé'));
       final bool hasEmpty =
           tester.any(find.text('No tienes elementos pendientes para hoy.'));
       expect(hasCards || hasEmpty, isTrue);
@@ -264,30 +278,30 @@ void main() {
       await _launchApp(tester);
 
       // Load demo items – all have nextReviewDate = now, so they are due
-      await tester.tap(find.text('Cargar demo rapida'));
+      await tester.tap(find.text('Cargar demo rápida'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.auto_awesome));
+      await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
       await tester.pumpAndSettle();
 
-      expect(find.text('No recorde'), findsOneWidget);
-      expect(find.text('Mas o menos'), findsOneWidget);
-      expect(find.text('Facil'), findsOneWidget);
+      expect(find.text('No recordé'), findsOneWidget);
+      expect(find.text('Más o menos'), findsOneWidget);
+      expect(find.text('Fácil'), findsOneWidget);
     });
 
     testWidgets('answering Facil advances to the next card or completes review',
         (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.text('Cargar demo rapida'));
+        await tester.tap(find.text('Cargar demo rápida'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.auto_awesome));
+        await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
       await tester.pumpAndSettle();
 
-      // Answer all cards with "Facil" until the session is done
-      while (tester.any(find.text('Facil'))) {
-        await tester.tap(find.text('Facil'));
+        // Answer all cards with "Fácil" until the session is done
+        while (tester.any(find.text('Fácil'))) {
+          await tester.tap(find.text('Fácil'));
         await tester.pumpAndSettle();
       }
 
@@ -304,12 +318,8 @@ void main() {
   group('Pronunciation screen', () {
     testWidgets('tapping pronunciation icon without items shows empty message',
         (tester) async {
-      await _launchApp(tester);
+        await _openPronunciationWithEmptyItems(tester);
 
-      await tester.tap(find.byIcon(Icons.record_voice_over));
-      await tester.pumpAndSettle();
-
-        // Empty state uses a plain AppBar with the original label (no accent).
       expect(find.text('Pronunciacion'), findsOneWidget);
       expect(find.text('No hay frases para practicar.'), findsOneWidget);
     });
@@ -318,15 +328,176 @@ void main() {
         (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.text('Cargar demo rapida'));
+      await tester.tap(find.text('Cargar demo rápida'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.record_voice_over));
+      await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
       await tester.pumpAndSettle();
 
-      // Refactored UI: header uses accented title, label sits above the dropdown.
       expect(find.text('Pronunciación'), findsOneWidget);
       expect(find.text('Frase a practicar'), findsOneWidget);
+      expect(find.text('Escuchar frase (TTS)'), findsOneWidget);
+      expect(find.text('Grabar y evaluar (STT)'), findsOneWidget);
+    });
+
+    testWidgets('tapping TTS plays the selected phrase', (tester) async {
+      await _launchApp(tester);
+
+      await _addItem(tester, text: 'Nice to meet you', meaning: 'Mucho gusto');
+
+      await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Escuchar frase (TTS)'));
+      await tester.pumpAndSettle();
+
+      expect(_fakeTextToSpeechService.spokenTexts, <String>[
+        'Nice to meet you',
+      ]);
+      expect(find.text('Nice to meet you'), findsWidgets);
+    });
+
+    testWidgets('recording can be cancelled and returns to main view', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+
+      final Completer<String?> pendingRecognition = Completer<String?>();
+      _fakeSpeechToTextService.enqueueDeferredResult(pendingRecognition.future);
+
+      await _addItem(tester, text: 'Good evening', meaning: 'Buenas noches');
+
+      await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Grabar y evaluar (STT)'));
+      await tester.pump();
+
+      expect(find.text('Graba tu pronunciación'), findsOneWidget);
+      expect(find.text('Cancelar grabación'), findsOneWidget);
+
+      await tester.tap(find.text('Cancelar grabación'));
+      await tester.pumpAndSettle();
+
+      pendingRecognition.complete('Good evening');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Escuchar frase (TTS)'), findsOneWidget);
+      expect(find.text('Grabar y evaluar (STT)'), findsOneWidget);
+      expect(find.text('Resultado'), findsNothing);
+    });
+
+    testWidgets(
+      'successful recording shows result and advances to next phrase',
+      (tester) async {
+        await _launchApp(tester);
+
+        _fakeSpeechToTextService.enqueueResult('How are you doing today?');
+
+        await tester.tap(find.text('Cargar demo rápida'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
+        await tester.pumpAndSettle();
+
+        expect(find.text('1 de 3'), findsOneWidget);
+        expect(find.text('How are you doing today?'), findsWidgets);
+
+        await tester.tap(find.text('Grabar y evaluar (STT)'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Resultado'), findsOneWidget);
+        expect(find.text('Tu dijiste:'), findsOneWidget);
+        expect(find.text('Frase correcta:'), findsOneWidget);
+        expect(find.text('Muy bien'), findsOneWidget);
+        expect(find.text('Siguiente frase'), findsOneWidget);
+
+        await tester.tap(find.text('Siguiente frase'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('2 de 3'), findsOneWidget);
+        expect(find.text('I would like a cup of coffee.'), findsWidgets);
+        expect(find.text('Resultado'), findsNothing);
+      },
+    );
+
+    testWidgets('retry from result records again and refreshes the score', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+
+      _fakeSpeechToTextService
+        ..enqueueResult('Practice makes perfect')
+        ..enqueueResult('Practice makes perfect.');
+
+      await _addItem(
+        tester,
+        text: 'Practice makes perfect.',
+        meaning: 'La práctica hace al maestro.',
+      );
+
+      await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Grabar y evaluar (STT)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resultado'), findsOneWidget);
+      expect(find.text('Volver a intentar'), findsOneWidget);
+
+      await tester.tap(find.text('Volver a intentar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Resultado'), findsOneWidget);
+      expect(_fakeSpeechToTextService.listenCount, 2);
+      expect(find.text('Practice makes perfect.'), findsWidgets);
+    });
+
+    testWidgets('last phrase can finish and return to the home screen', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+
+      _fakeSpeechToTextService.enqueueResult('Only one phrase');
+
+      await _addItem(
+        tester,
+        text: 'Only one phrase',
+        meaning: 'Solo una frase',
+      );
+
+      await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Grabar y evaluar (STT)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Finalizar'), findsOneWidget);
+
+      await tester.tap(find.text('Finalizar'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(find.text('English Learning'), findsOneWidget);
+      expect(find.text('Only one phrase'), findsOneWidget);
+    });
+
+    testWidgets('failed recognition shows an error and allows trying again', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+
+      _fakeSpeechToTextService.enqueueResult(null);
+
+      await _addItem(tester, text: 'See you later', meaning: 'Nos vemos luego');
+
+      await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Grabar y evaluar (STT)'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No se detecto voz. Intenta de nuevo.'), findsOneWidget);
       expect(find.text('Escuchar frase (TTS)'), findsOneWidget);
       expect(find.text('Grabar y evaluar (STT)'), findsOneWidget);
     });
