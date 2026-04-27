@@ -5,6 +5,7 @@ import 'core/constants/app_constants.dart';
 import 'core/di/service_locator.dart';
 import 'core/theme/app_theme.dart';
 import 'features/learning/presentation/presentation.dart';
+import 'presentation/splash/voxly_splash_screen.dart';
 import 'features/review/presentation/presentation.dart';
 
 /// Application entry point.
@@ -70,7 +71,7 @@ class _EnglishLearningAppState extends State<EnglishLearningApp> {
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
-        home: const HomeScreen(),
+        home: const VoxlySplashScreen(),
       ),
     );
   }
