@@ -4,10 +4,14 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'notification_service.dart';
 
+/// Local-notification implementation used for daily review reminders.
 class FlutterNotificationService implements NotificationService {
   FlutterNotificationService(this._plugin);
 
+  /// Payload consumed by the app root to open the review flow.
   static const String reviewPayload = 'open_review';
+
+  /// Stable ID so every new schedule replaces the previous daily reminder.
   static const int _dailyReminderId = 1001;
 
   final FlutterLocalNotificationsPlugin _plugin;
@@ -28,6 +32,7 @@ class FlutterNotificationService implements NotificationService {
     await _plugin.initialize(
       settings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Forward payload taps to the app-level listener.
         final String? payload = response.payload;
         if (payload != null && payload.isNotEmpty) {
           _tapController.add(payload);
@@ -53,6 +58,7 @@ class FlutterNotificationService implements NotificationService {
 
   @override
   Future<void> scheduleDailyReviewReminder({required int dueCount}) async {
+    // No due items means no reminder should be shown.
     if (dueCount <= 0) {
       await _plugin.cancel(_dailyReminderId);
       return;
@@ -74,6 +80,7 @@ class FlutterNotificationService implements NotificationService {
       _dailyReminderId,
       'Hora de practicar ingles',
       'Tienes $dueCount frases pendientes para revisar hoy.',
+      // Uses plugin-provided daily interval; not a fixed wall-clock time.
       RepeatInterval.daily,
       notificationDetails,
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

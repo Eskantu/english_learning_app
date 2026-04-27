@@ -9,6 +9,10 @@ import '../../features/learning/domain/domain.dart';
 import '../../features/pronunciation/domain/domain.dart';
 import '../../features/review/domain/domain.dart';
 
+/// Centralized dependency container for app runtime and tests.
+///
+/// The app uses static late-final fields instead of an external DI package,
+/// so initialization order is important: [init] must run before UI startup.
 class ServiceLocator {
   ServiceLocator._();
 
@@ -26,6 +30,7 @@ class ServiceLocator {
   static late final NotificationService notificationService;
   static late final PronunciationEvaluator pronunciationEvaluator;
 
+  /// Configures production dependencies and platform services.
   static Future<void> init() async {
     await Hive.initFlutter();
     if (!Hive.isAdapterRegistered(1)) {
@@ -56,6 +61,8 @@ class ServiceLocator {
     speechToTextService = FlutterSpeechToTextService(SpeechToText());
     notificationService =
         FlutterNotificationService(FlutterLocalNotificationsPlugin());
+
+    // These services touch platform channels and need explicit initialization.
     await textToSpeechService.initialize();
     await speechToTextService.initialize();
     await notificationService.initialize();

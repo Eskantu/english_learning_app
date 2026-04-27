@@ -7,8 +7,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'package:english_learning_ap/core/di/service_locator.dart';
+import 'package:english_learning_ap/features/learning/data/data.dart';
 import 'package:english_learning_ap/main.dart';
 
 import 'fakes/fake_notification_service.dart';
@@ -19,14 +21,11 @@ import 'fakes/fake_text_to_speech_service.dart';
 // Helpers
 // ---------------------------------------------------------------------------
 
+const String _testBoxName = 'test_learning_items_box';
+
 /// Initialise the app with a fresh, empty Hive box and fake native services,
 /// then pump the widget tree so the home screen is fully visible.
 Future<void> _launchApp(WidgetTester tester) async {
-  await ServiceLocator.initForTest(
-    notificationServiceOverride: FakeNotificationService(),
-    textToSpeechServiceOverride: FakeTextToSpeechService(),
-    speechToTextServiceOverride: FakeSpeechToTextService(),
-  );
   await tester.pumpWidget(const EnglishLearningApp());
   await tester.pumpAndSettle();
 }
@@ -37,6 +36,19 @@ Future<void> _launchApp(WidgetTester tester) async {
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await ServiceLocator.initForTest(
+      notificationServiceOverride: FakeNotificationService(),
+      textToSpeechServiceOverride: FakeTextToSpeechService(),
+      speechToTextServiceOverride: FakeSpeechToTextService(),
+    );
+  });
+
+  setUp(() async {
+    final Box<LearningItemModel> box = Hive.box<LearningItemModel>(_testBoxName);
+    await box.clear();
+  });
 
   // -------------------------------------------------------------------------
   // Home screen — empty state
@@ -169,13 +181,9 @@ void main() {
       await tester.tap(find.text('Old text'));
       await tester.pumpAndSettle();
 
-      // Clear and update the English text field
-      final Finder textField =
-          find.widgetWithText(TextFormField, 'Old text');
-      await tester.tap(textField);
-      await tester.pump();
-      (tester.widget<TextFormField>(textField).controller)?.clear();
-      await tester.enterText(textField, 'New text');
+        // Update the first field (English text). enterText replaces prior value.
+        final Finder englishTextField = find.byType(TextFormField).first;
+        await tester.enterText(englishTextField, 'New text');
 
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();

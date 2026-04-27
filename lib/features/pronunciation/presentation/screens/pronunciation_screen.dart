@@ -6,6 +6,7 @@ import '../cubit/pronunciation_cubit.dart';
 import '../cubit/pronunciation_state.dart';
 import '../../domain/entities/pronunciation_result.dart';
 
+/// Practice screen where users select a phrase, listen (TTS), and record (STT).
 class PronunciationScreen extends StatefulWidget {
   const PronunciationScreen({super.key, required this.items});
 
@@ -22,6 +23,7 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
   void initState() {
     super.initState();
     if (widget.items.isNotEmpty) {
+      // Pre-select first item so actions are immediately available.
       _selectedItem = widget.items.first;
       context.read<PronunciationCubit>().selectItem(_selectedItem!);
     }
@@ -37,6 +39,7 @@ class _PronunciationScreenState extends State<PronunciationScreen> {
             return const Center(child: Text('No hay frases para practicar.'));
           }
 
+          // Convert enum result into user-facing localized label.
           final String feedbackText = switch (state.result?.feedback) {
             PronunciationFeedback.correct => 'Correcto',
             PronunciationFeedback.almostCorrect => 'Casi correcto',

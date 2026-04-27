@@ -9,6 +9,7 @@ import '../../domain/usecases/get_items_to_review_usecase.dart';
 import '../../domain/usecases/update_learning_item_usecase.dart';
 import 'learning_items_state.dart';
 
+/// Coordinates CRUD operations for learning items and reminder scheduling.
 class LearningItemsCubit extends Cubit<LearningItemsState> {
   LearningItemsCubit({
     required GetAllLearningItemsUseCase getAllLearningItemsUseCase,
@@ -37,6 +38,8 @@ class LearningItemsCubit extends Cubit<LearningItemsState> {
     try {
       final List<LearningItem> items = await _getAllLearningItemsUseCase();
       emit(state.copyWith(status: LearningItemsStatus.success, items: items));
+
+      // Reminder count is based on currently due items.
       final List<LearningItem> dueItems = await _getItemsToReviewUseCase(DateTime.now());
       await _notificationService.scheduleDailyReviewReminder(dueCount: dueItems.length);
     } catch (_) {
@@ -51,6 +54,7 @@ class LearningItemsCubit extends Cubit<LearningItemsState> {
 
   Future<void> saveItem(LearningItem item) async {
     try {
+      // Route to update vs insert using ID presence in current state.
       final bool exists = state.items.any((LearningItem e) => e.id == item.id);
       if (exists) {
         await _updateLearningItemUseCase(item);
@@ -84,6 +88,7 @@ class LearningItemsCubit extends Cubit<LearningItemsState> {
 
   Future<void> seedDemoItems() async {
     final DateTime now = DateTime.now();
+    // Demo data helps onboarding and quick manual testing.
     final List<LearningItem> demoItems = <LearningItem>[
       LearningItem(
         id: 'demo-1',

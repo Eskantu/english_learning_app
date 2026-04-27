@@ -6,12 +6,16 @@ import 'core/di/service_locator.dart';
 import 'features/learning/presentation/presentation.dart';
 import 'features/review/presentation/presentation.dart';
 
+/// Application entry point.
+///
+/// Bootstraps platform bindings and dependency graph before rendering the UI.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await ServiceLocator.init();
   runApp(const EnglishLearningApp());
 }
 
+/// Root widget that wires navigation and notification deep-link handling.
 class EnglishLearningApp extends StatefulWidget {
   const EnglishLearningApp({super.key});
 
@@ -25,7 +29,10 @@ class _EnglishLearningAppState extends State<EnglishLearningApp> {
   @override
   void initState() {
     super.initState();
+    // Handle taps while the app is alive (foreground/background resume).
     ServiceLocator.notificationService.onNotificationTap.listen(_handlePayload);
+
+    // Handle cold-start launches from a notification payload.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final String? launchPayload = await ServiceLocator.notificationService.getLaunchPayload();
       if (launchPayload != null) {
@@ -35,6 +42,7 @@ class _EnglishLearningAppState extends State<EnglishLearningApp> {
   }
 
   void _handlePayload(String payload) {
+    // Keep payload routing explicit so unsupported payloads are ignored safely.
     if (payload != 'open_review') {
       return;
     }

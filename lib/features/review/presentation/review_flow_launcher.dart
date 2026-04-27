@@ -6,6 +6,7 @@ import '../../learning/presentation/cubit/learning_items_cubit.dart';
 import 'cubit/review_cubit.dart';
 import 'screens/review_screen.dart';
 
+/// Small helper to keep review navigation and bloc wiring in one place.
 class ReviewFlowLauncher {
   const ReviewFlowLauncher._();
 
@@ -14,6 +15,7 @@ class ReviewFlowLauncher {
       MaterialPageRoute<void>(
         builder: (_) => MultiBlocProvider(
           providers: <BlocProvider>[
+            // Reuse the existing learning cubit so review completion can refresh home data.
             BlocProvider.value(value: context.read<LearningItemsCubit>()),
             BlocProvider<ReviewCubit>(
               create: (_) => ReviewCubit(
