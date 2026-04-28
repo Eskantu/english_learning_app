@@ -16,6 +16,7 @@ class _VoxlySplashScreenState extends State<VoxlySplashScreen>
   late final AnimationController _controller;
   late final Animation<double> _fadeAnimation;
   late final Animation<double> _scaleAnimation;
+  bool _showGradient = false;
 
   @override
   void initState() {
@@ -42,7 +43,13 @@ class _VoxlySplashScreenState extends State<VoxlySplashScreen>
 
     unawaited(_controller.forward());
 
-    await Future<void>.delayed(const Duration(milliseconds: 1600));
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    setState(() {
+      _showGradient = true;
+    });
+
+    await Future<void>.delayed(const Duration(milliseconds: 1100));
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
@@ -71,22 +78,43 @@ class _VoxlySplashScreenState extends State<VoxlySplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/splash/background.png'),
-            fit: BoxFit.cover,
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 380),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            child:
+                _showGradient
+                    ? Container(
+                      key: const ValueKey<String>('gradient-background'),
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/splash/background.png'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    )
+                    : const ColoredBox(
+                      key: ValueKey<String>('black-background'),
+                      color: Colors.black,
+                    ),
           ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: Image.asset('assets/icon/app_icon.png', width: 140),
+          Center(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: Image.asset('assets/icon/app_icon.png', width: 140),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

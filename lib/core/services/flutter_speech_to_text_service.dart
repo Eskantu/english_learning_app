@@ -8,7 +8,6 @@ class FlutterSpeechToTextService implements SpeechToTextService {
   FlutterSpeechToTextService(this._speech);
 
   final SpeechToText _speech;
-
   @override
   Future<void> initialize() async {
     await _speech.initialize();
@@ -17,6 +16,7 @@ class FlutterSpeechToTextService implements SpeechToTextService {
   @override
   Future<String?> listenOnce() async {
     final bool available = await _speech.initialize();
+    print('Speech recognition available: $available');
     if (!available) {
       return null;
     }
@@ -40,7 +40,9 @@ class FlutterSpeechToTextService implements SpeechToTextService {
       await _speech.stop();
       if (!completer.isCompleted) {
         completer.complete(
-          recognizedWords == null || recognizedWords!.isEmpty ? null : recognizedWords,
+          recognizedWords == null || recognizedWords!.isEmpty
+              ? null
+              : recognizedWords,
         );
       }
     });
