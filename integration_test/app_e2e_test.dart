@@ -84,6 +84,18 @@ Future<void> _openPronunciationWithEmptyItems(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _openMemoryGameWithItems(WidgetTester tester) async {
+  await _launchApp(tester);
+
+  if (tester.any(find.text('Cargar demo rápida'))) {
+    await tester.tap(find.text('Cargar demo rápida'));
+    await tester.pumpAndSettle();
+  }
+
+  await tester.tap(find.text('🧠 Memorama'));
+  await tester.pumpAndSettle();
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -500,6 +512,67 @@ void main() {
       expect(find.text('No se detecto voz. Intenta de nuevo.'), findsOneWidget);
       expect(find.text('Escuchar frase (TTS)'), findsOneWidget);
       expect(find.text('Grabar y evaluar (STT)'), findsOneWidget);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Memory game module
+  // -------------------------------------------------------------------------
+  group('Memory game module', () {
+    testWidgets('home entry opens memorama screen', (tester) async {
+      await _openMemoryGameWithItems(tester);
+
+      expect(find.text('Memorama'), findsOneWidget);
+      expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+      expect(find.text('Movimientos'), findsOneWidget);
+      expect(find.text('Pares'), findsOneWidget);
+      expect(find.byIcon(Icons.psychology_alt_rounded), findsWidgets);
+    });
+
+    testWidgets('flipping one card reveals card value', (tester) async {
+      await _openMemoryGameWithItems(tester);
+
+      final int iconsBefore =
+          find.byIcon(Icons.psychology_alt_rounded).evaluate().length;
+      expect(iconsBefore, greaterThan(0));
+
+      await tester.tap(find.byIcon(Icons.psychology_alt_rounded).first);
+      await tester.pumpAndSettle();
+
+      final int iconsAfter =
+          find.byIcon(Icons.psychology_alt_rounded).evaluate().length;
+      expect(iconsAfter, lessThan(iconsBefore));
+    });
+
+    testWidgets('second card flip counts one move', (tester) async {
+      await _openMemoryGameWithItems(tester);
+
+      expect(find.text('0'), findsWidgets);
+
+      await tester.tap(find.byIcon(Icons.psychology_alt_rounded).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.psychology_alt_rounded).first);
+      await tester.pumpAndSettle(const Duration(milliseconds: 750));
+
+      expect(find.text('1'), findsWidgets);
+    });
+
+    testWidgets('reset action reinitializes the board', (tester) async {
+      await _openMemoryGameWithItems(tester);
+
+      await tester.tap(find.byIcon(Icons.psychology_alt_rounded).first);
+      await tester.pumpAndSettle();
+
+      final int iconsAfterFlip =
+          find.byIcon(Icons.psychology_alt_rounded).evaluate().length;
+
+      await tester.tap(find.byIcon(Icons.refresh_rounded));
+      await tester.pumpAndSettle();
+
+      final int iconsAfterReset =
+          find.byIcon(Icons.psychology_alt_rounded).evaluate().length;
+      expect(iconsAfterReset, greaterThanOrEqualTo(iconsAfterFlip));
+      expect(find.text('0'), findsWidgets);
     });
   });
 }
