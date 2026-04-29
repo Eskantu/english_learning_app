@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../memory_game/presentation/screens/memory_game_screen.dart';
 import '../../domain/entities/learning_item.dart';
 import '../../../pronunciation/presentation/presentation.dart';
 import '../../../review/presentation/presentation.dart';
@@ -49,6 +50,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (result != null && context.mounted) {
       await context.read<LearningItemsCubit>().saveItem(result);
     }
+  }
+
+  void _openMemoryGame(BuildContext context, List<LearningItem> items) {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => MemoryGameScreen(verbs: items)),
+    );
   }
 
   @override
@@ -208,6 +215,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       totalPhrases: totalItems,
                       practicedToday: reviewedToday,
                       streak: streak,
+                    ),
+                  ),
+                ),
+                // Memory game entry
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                  sliver: SliverToBoxAdapter(
+                    child: OutlinedButton.icon(
+                      onPressed: () => _openMemoryGame(context, state.items),
+                      icon: const Icon(Icons.psychology_alt_rounded),
+                      label: const Text('🧠 Memorama'),
                     ),
                   ),
                 ),
