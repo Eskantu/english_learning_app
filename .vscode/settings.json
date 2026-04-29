@@ -1,0 +1,9 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^flutter test integration_test/app_e2e_test\\.dart -d emulator-5554$/": {
+      "approve": true,
+      "matchCommandLine": true
+    },
+    "flutter": true
+  }
+}
