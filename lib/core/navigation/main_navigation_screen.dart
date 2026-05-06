@@ -8,6 +8,7 @@ import '../../features/memory_game/presentation/screens/memory_game_screen.dart'
 import '../../features/pronunciation/presentation/cubit/pronunciation_cubit.dart';
 import '../../features/pronunciation/presentation/screens/pronunciation_screen.dart';
 import '../../features/review/presentation/review_flow_launcher.dart';
+import '../../features/settings/presentation/settings_screen.dart';
 import '../di/service_locator.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -189,9 +190,61 @@ class _ProfileTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFF5F7FF),
-      body: Center(child: Text('Profile')),
+    final ThemeData theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F7FF),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.settings_rounded),
+            tooltip: 'Settings',
+            onPressed: () {
+              Navigator.of(context).push<void>(
+                MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Container(
+          margin: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: <Color>[Color(0xFFEEF3FF), Color(0xFFE7F5EE)],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(
+                Icons.person_rounded,
+                size: 42,
+                color: Color(0xFF3F5873),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Your learning profile',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Configure reminders from the settings icon.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

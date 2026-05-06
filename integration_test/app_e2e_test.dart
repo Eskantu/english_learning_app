@@ -174,6 +174,37 @@ Future<void> _openMemoryGameWithItems(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+Future<void> _openSettingsFromProfile(WidgetTester tester) async {
+  await tester.tap(find.text('Profile'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.byIcon(Icons.settings_rounded));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _setReminderTimeTo730Pm(WidgetTester tester) async {
+  await tester.tap(find.byIcon(Icons.edit_rounded));
+  await tester.pumpAndSettle();
+
+  if (tester.any(find.byIcon(Icons.keyboard_outlined))) {
+    await tester.tap(find.byIcon(Icons.keyboard_outlined));
+    await tester.pumpAndSettle();
+  }
+
+  final Finder inputFields = find.byType(TextFormField);
+  if (tester.any(inputFields)) {
+    await tester.enterText(inputFields.at(0), '7');
+    await tester.enterText(inputFields.at(1), '30');
+  }
+
+  if (tester.any(find.text('PM'))) {
+    await tester.tap(find.text('PM').last);
+  }
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.text('OK'));
+  await tester.pumpAndSettle();
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -190,8 +221,11 @@ void main() {
   });
 
   setUp(() async {
-    final Box<LearningItemModel> box = Hive.box<LearningItemModel>(_testBoxName);
+    final Box<LearningItemModel> box = Hive.box<LearningItemModel>(
+      _testBoxName,
+    );
     await box.clear();
+    _fakeNotificationService.resetState();
     _fakeTextToSpeechService.reset();
     _fakeSpeechToTextService.reset();
   });
@@ -249,6 +283,107 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // Settings + notifications
+  // -------------------------------------------------------------------------
+  group('Settings and notification flow', () {
+    testWidgets('opens settings from profile gear icon', (tester) async {
+      await _launchApp(tester);
+
+      await _openSettingsFromProfile(tester);
+
+      expect(find.text('Settings'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('reminder_preview_text')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('toggle notifications updates state and cancellation logic', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+      await _ensureDemoItems(tester);
+      await _openSettingsFromProfile(tester);
+
+      final Finder toggle = find.byType(Switch);
+      expect(toggle, findsOneWidget);
+
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Notifications disabled'), findsOneWidget);
+      expect(_fakeNotificationService.notificationsEnabled, isFalse);
+      expect(_fakeNotificationService.cancelCallCount, greaterThan(0));
+
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Daily reminder scheduled for'),
+        findsOneWidget,
+      );
+      expect(_fakeNotificationService.notificationsEnabled, isTrue);
+      expect(_fakeNotificationService.pendingReminderCount, 1);
+    });
+
+    testWidgets('changing notification time updates UI and persists value', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+      await _ensureDemoItems(tester);
+      await _openSettingsFromProfile(tester);
+
+      await _setReminderTimeTo730Pm(tester);
+
+      expect(find.textContaining('7:30 PM'), findsWidgets);
+      expect(_fakeNotificationService.reminderHour, 19);
+      expect(_fakeNotificationService.reminderMinute, 30);
+    });
+
+    testWidgets('time change reschedules and disable cancels reminder', (
+      tester,
+    ) async {
+      await _launchApp(tester);
+      await _ensureDemoItems(tester);
+      await _openSettingsFromProfile(tester);
+
+      final int scheduleBefore = _fakeNotificationService.scheduleCallCount;
+      await _setReminderTimeTo730Pm(tester);
+
+      expect(
+        _fakeNotificationService.scheduleCallCount,
+        greaterThan(scheduleBefore),
+      );
+      expect(_fakeNotificationService.pendingReminderCount, 1);
+
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+
+      expect(_fakeNotificationService.pendingReminderCount, 0);
+      expect(_fakeNotificationService.cancelCallCount, greaterThan(0));
+    });
+
+    testWidgets('settings persist after app restart', (tester) async {
+      await _launchApp(tester);
+      await _ensureDemoItems(tester);
+      await _openSettingsFromProfile(tester);
+      await _setReminderTimeTo730Pm(tester);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+
+      await _launchApp(tester);
+      await _openSettingsFromProfile(tester);
+
+      expect(find.textContaining('7:30 PM'), findsWidgets);
+      expect(
+        find.textContaining('Daily reminder scheduled for'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Home screen — empty state
   // -------------------------------------------------------------------------
   group('Home screen – empty state', () {
@@ -287,7 +422,9 @@ void main() {
       expect(find.text('Guardar'), findsOneWidget);
     });
 
-    testWidgets('submitting empty form shows validation errors', (tester) async {
+    testWidgets('submitting empty form shows validation errors', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       await _tapAddEntry(tester);
@@ -300,7 +437,9 @@ void main() {
       expect(find.text('Ingresa el significado.'), findsOneWidget);
     });
 
-    testWidgets('filling form and saving adds item to home list', (tester) async {
+    testWidgets('filling form and saving adds item to home list', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       await _addItem(
@@ -320,12 +459,13 @@ void main() {
   // Editing a learning item
   // -------------------------------------------------------------------------
   group('Edit learning item', () {
-    testWidgets('tapping a list item opens edit form pre-filled', (tester) async {
+    testWidgets('tapping a list item opens edit form pre-filled', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       // Add an item first
-      await _addItem(tester, text: 'Good morning', meaning: 'Buenos dias',
-      );
+      await _addItem(tester, text: 'Good morning', meaning: 'Buenos dias');
 
       // Tap the item to edit it
       await tester.tap(find.text('Good morning'));
@@ -333,11 +473,16 @@ void main() {
 
       expect(find.text('Editar frase'), findsOneWidget);
       // Fields should already contain the saved values
-      expect(find.widgetWithText(TextFormField, 'Good morning'), findsOneWidget);
+      expect(
+        find.widgetWithText(TextFormField, 'Good morning'),
+        findsOneWidget,
+      );
       expect(find.widgetWithText(TextFormField, 'Buenos dias'), findsOneWidget);
     });
 
-    testWidgets('editing and saving updates the item in the list', (tester) async {
+    testWidgets('editing and saving updates the item in the list', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       // Add an item
@@ -347,9 +492,9 @@ void main() {
       await tester.tap(find.text('Old text'));
       await tester.pumpAndSettle();
 
-        // Update the first field (English text). enterText replaces prior value.
-        final Finder englishTextField = find.byType(TextFormField).first;
-        await tester.enterText(englishTextField, 'New text');
+      // Update the first field (English text). enterText replaces prior value.
+      final Finder englishTextField = find.byType(TextFormField).first;
+      await tester.enterText(englishTextField, 'New text');
 
       await tester.tap(find.text('Guardar'));
       await tester.pumpAndSettle();
@@ -363,7 +508,9 @@ void main() {
   // Deleting a learning item
   // -------------------------------------------------------------------------
   group('Delete learning item', () {
-    testWidgets('tapping delete icon removes the item from the list', (tester) async {
+    testWidgets('tapping delete icon removes the item from the list', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       // Add an item
@@ -410,13 +557,15 @@ void main() {
 
       // Either shows cards or "no items" message — both are the ReviewScreen
       final bool hasCards = tester.any(find.text('No recordé'));
-      final bool hasEmpty =
-          tester.any(find.text('No tienes elementos pendientes para hoy.'));
+      final bool hasEmpty = tester.any(
+        find.text('No tienes elementos pendientes para hoy.'),
+      );
       expect(hasCards || hasEmpty, isTrue);
     });
 
-    testWidgets('review session shows all quality options with due items',
-        (tester) async {
+    testWidgets('review session shows all quality options with due items', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       // Load demo items – all have nextReviewDate = now, so they are due
@@ -430,42 +579,47 @@ void main() {
       expect(find.text('Fácil'), findsOneWidget);
     });
 
-    testWidgets('answering Facil advances to the next card or completes review',
-        (tester) async {
-      await _launchApp(tester);
+    testWidgets(
+      'answering Facil advances to the next card or completes review',
+      (tester) async {
+        await _launchApp(tester);
 
         await _ensureDemoItems(tester);
 
         await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
         // Answer all cards with "Fácil" until the session is done
         while (tester.any(find.text('Fácil'))) {
           await tester.tap(find.text('Fácil'));
-        await tester.pumpAndSettle();
-      }
+          await tester.pumpAndSettle();
+        }
 
-      expect(
-        find.text('No tienes elementos pendientes para hoy.'),
-        findsOneWidget,
-      );
-    });
+        expect(
+          find.text('No tienes elementos pendientes para hoy.'),
+          findsOneWidget,
+        );
+      },
+    );
   });
 
   // -------------------------------------------------------------------------
   // Pronunciation screen
   // -------------------------------------------------------------------------
   group('Pronunciation screen', () {
-    testWidgets('tapping pronunciation icon without items shows empty message',
-        (tester) async {
+    testWidgets(
+      'tapping pronunciation icon without items shows empty message',
+      (tester) async {
         await _openPronunciationWithEmptyItems(tester);
 
-      expect(find.text('Pronunciacion'), findsOneWidget);
-      expect(find.text('No hay frases para practicar.'), findsOneWidget);
-    });
+        expect(find.text('Pronunciacion'), findsOneWidget);
+        expect(find.text('No hay frases para practicar.'), findsOneWidget);
+      },
+    );
 
-    testWidgets('tapping pronunciation icon with items shows the phrase card',
-        (tester) async {
+    testWidgets('tapping pronunciation icon with items shows the phrase card', (
+      tester,
+    ) async {
       await _launchApp(tester);
 
       await _ensureDemoItems(tester);
