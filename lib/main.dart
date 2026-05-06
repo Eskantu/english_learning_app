@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/di/service_locator.dart';
+import 'core/navigation/main_navigation_screen.dart';
 import 'core/theme/app_theme.dart';
 import 'features/learning/presentation/presentation.dart';
 import 'presentation/splash/voxly_splash_screen.dart';
@@ -72,6 +73,9 @@ class _EnglishLearningAppState extends State<EnglishLearningApp> {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         home: const VoxlySplashScreen(),
+        routes: <String, WidgetBuilder>{
+          '/main-navigation': (_) => const MainNavigationScreen(),
+        },
       ),
     );
   }

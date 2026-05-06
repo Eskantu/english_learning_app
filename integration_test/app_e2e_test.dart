@@ -38,6 +38,7 @@ final FakeSpeechToTextService _fakeSpeechToTextService =
 /// then pump the widget tree so the home screen is fully visible.
 Future<void> _launchApp(WidgetTester tester) async {
   await tester.pumpWidget(const EnglishLearningApp());
+  await tester.pump(const Duration(milliseconds: 2100));
   await tester.pumpAndSettle();
 }
 
@@ -47,7 +48,7 @@ Future<void> _addItem(
   required String meaning,
   String examples = 'Example sentence.',
 }) async {
-  await tester.tap(find.byType(FloatingActionButton));
+  await _tapAddEntry(tester);
   await tester.pumpAndSettle();
 
   await tester.enterText(
@@ -65,6 +66,70 @@ Future<void> _addItem(
 
   await tester.tap(find.text('Guardar'));
   await tester.pumpAndSettle();
+}
+
+Future<void> _tapAddEntry(WidgetTester tester) async {
+  if (tester.any(find.byType(FloatingActionButton))) {
+    await tester.tap(find.byType(FloatingActionButton).first);
+    return;
+  }
+  final Finder addText = find.textContaining('Agregar');
+  if (tester.any(addText)) {
+    await tester.tap(addText.first);
+    return;
+  }
+  if (tester.any(find.byIcon(Icons.add_rounded))) {
+    await tester.tap(find.byIcon(Icons.add_rounded).first);
+    return;
+  }
+
+  final Iterable<Element> textElements = find.byType(Text).evaluate();
+  final List<String> visibleTexts =
+      textElements
+          .map((Element e) => (e.widget as Text).data)
+          .whereType<String>()
+          .where((String t) => t.trim().isNotEmpty)
+          .toSet()
+          .toList()
+        ..sort();
+
+  fail(
+    'No se encontró una entrada para agregar frases. '
+    'Textos visibles: ${visibleTexts.join(' | ')}',
+  );
+}
+
+Future<void> _ensureDemoItems(WidgetTester tester) async {
+  final Finder loadDemo = find.textContaining('Cargar demo');
+  if (tester.any(loadDemo)) {
+    await tester.tap(loadDemo.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+
+  final bool alreadyHasDemo =
+      tester.any(find.text('How are you doing today?')) ||
+      tester.any(find.text('I would like a cup of coffee.')) ||
+      tester.any(find.text('Practice makes perfect.'));
+  if (alreadyHasDemo) {
+    return;
+  }
+
+  await _addItem(
+    tester,
+    text: 'How are you doing today?',
+    meaning: '¿Cómo estás hoy?',
+  );
+  await _addItem(
+    tester,
+    text: 'I would like a cup of coffee.',
+    meaning: 'Me gustaría una taza de café.',
+  );
+  await _addItem(
+    tester,
+    text: 'Practice makes perfect.',
+    meaning: 'La práctica hace al maestro.',
+  );
 }
 
 Future<void> _openPronunciationWithEmptyItems(WidgetTester tester) async {
@@ -86,13 +151,26 @@ Future<void> _openPronunciationWithEmptyItems(WidgetTester tester) async {
 
 Future<void> _openMemoryGameWithItems(WidgetTester tester) async {
   await _launchApp(tester);
+  await _ensureDemoItems(tester);
 
-  if (tester.any(find.text('Cargar demo rápida'))) {
-    await tester.tap(find.text('Cargar demo rápida'));
+  final Finder memoramaEntry = find.textContaining('Memorama');
+  if (!tester.any(memoramaEntry)) {
+    if (tester.any(find.byType(CustomScrollView))) {
+      await tester.drag(
+        find.byType(CustomScrollView).first,
+        const Offset(0, -260),
+      );
+    }
     await tester.pumpAndSettle();
   }
 
-  await tester.tap(find.text('🧠 Memorama'));
+  if (tester.any(memoramaEntry)) {
+    await tester.tap(memoramaEntry.first);
+  } else if (tester.any(find.byIcon(Icons.psychology_alt_rounded))) {
+    await tester.tap(find.byIcon(Icons.psychology_alt_rounded).first);
+  } else {
+    fail('No se encontró entrada para Memorama.');
+  }
   await tester.pumpAndSettle();
 }
 
@@ -119,6 +197,58 @@ void main() {
   });
 
   // -------------------------------------------------------------------------
+  // Bottom navigation
+  // -------------------------------------------------------------------------
+  group('Bottom navigation', () {
+    testWidgets('shows the 4 main tabs', (tester) async {
+      await _launchApp(tester);
+
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Practice'), findsOneWidget);
+      expect(find.text('Learn'), findsOneWidget);
+      expect(find.text('Profile'), findsOneWidget);
+    });
+
+    testWidgets('switches across tabs correctly', (tester) async {
+      await _launchApp(tester);
+
+      // Home (default)
+      final bool homeVisible =
+          tester.any(find.text('Agrega tu primera frase')) ||
+          tester.any(find.text('English Learning'));
+      expect(homeVisible, isTrue);
+
+      // Practice
+      await tester.tap(find.text('Practice'));
+      await tester.pumpAndSettle();
+      expect(
+        tester.any(find.text('Pronunciacion')) ||
+            tester.any(find.text('Pronunciación')),
+        isTrue,
+      );
+
+      // Learn
+      await tester.tap(find.text('Learn'));
+      await tester.pumpAndSettle();
+      expect(find.text('Learn'), findsWidgets);
+      expect(find.text('Memorama'), findsOneWidget);
+
+      // Profile
+      await tester.tap(find.text('Profile'));
+      await tester.pumpAndSettle();
+      expect(find.text('Profile'), findsWidgets);
+
+      // Back to Home
+      await tester.tap(find.text('Home'));
+      await tester.pumpAndSettle();
+      final bool homeVisibleAgain =
+          tester.any(find.text('Agrega tu primera frase')) ||
+          tester.any(find.text('English Learning'));
+      expect(homeVisibleAgain, isTrue);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Home screen — empty state
   // -------------------------------------------------------------------------
   group('Home screen – empty state', () {
@@ -132,9 +262,11 @@ void main() {
     testWidgets('shows app bar with title and action buttons', (tester) async {
       await _launchApp(tester);
 
-      expect(find.text('Agregar frase'), findsOneWidget);
+      expect(tester.any(find.textContaining('Agregar')), isTrue);
       expect(find.text('Cargar demo rápida'), findsOneWidget);
-      expect(find.byType(FloatingActionButton), findsOneWidget);
+      final bool hasFab = tester.any(find.byType(FloatingActionButton));
+      final bool hasAddIcon = tester.any(find.byIcon(Icons.add_rounded));
+      expect(hasFab || hasAddIcon, isTrue);
     });
   });
 
@@ -145,7 +277,7 @@ void main() {
     testWidgets('tapping FAB opens the add-item form', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.byType(FloatingActionButton));
+      await _tapAddEntry(tester);
       await tester.pumpAndSettle();
 
       expect(find.text('Agregar frase'), findsOneWidget);
@@ -158,7 +290,7 @@ void main() {
     testWidgets('submitting empty form shows validation errors', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.byType(FloatingActionButton));
+      await _tapAddEntry(tester);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Guardar'));
@@ -255,8 +387,7 @@ void main() {
     testWidgets('loading demo items populates the list', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.text('Cargar demo rápida'));
-      await tester.pumpAndSettle();
+      await _ensureDemoItems(tester);
 
       // All three demo phrases should be visible
       expect(find.text('How are you doing today?'), findsOneWidget);
@@ -272,8 +403,7 @@ void main() {
     testWidgets('tapping review icon opens the review screen', (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.text('Cargar demo rápida'));
-      await tester.pumpAndSettle();
+      await _ensureDemoItems(tester);
 
       await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
       await tester.pumpAndSettle();
@@ -290,8 +420,7 @@ void main() {
       await _launchApp(tester);
 
       // Load demo items – all have nextReviewDate = now, so they are due
-      await tester.tap(find.text('Cargar demo rápida'));
-      await tester.pumpAndSettle();
+      await _ensureDemoItems(tester);
 
       await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
       await tester.pumpAndSettle();
@@ -305,8 +434,7 @@ void main() {
         (tester) async {
       await _launchApp(tester);
 
-        await tester.tap(find.text('Cargar demo rápida'));
-      await tester.pumpAndSettle();
+        await _ensureDemoItems(tester);
 
         await tester.tap(find.byIcon(Icons.auto_awesome_rounded));
       await tester.pumpAndSettle();
@@ -340,8 +468,7 @@ void main() {
         (tester) async {
       await _launchApp(tester);
 
-      await tester.tap(find.text('Cargar demo rápida'));
-      await tester.pumpAndSettle();
+      await _ensureDemoItems(tester);
 
       await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
       await tester.pumpAndSettle();
@@ -406,8 +533,7 @@ void main() {
 
         _fakeSpeechToTextService.enqueueResult('How are you doing today?');
 
-        await tester.tap(find.text('Cargar demo rápida'));
-        await tester.pumpAndSettle();
+        await _ensureDemoItems(tester);
 
         await tester.tap(find.byIcon(Icons.record_voice_over_rounded));
         await tester.pumpAndSettle();

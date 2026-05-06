@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../features/learning/presentation/screens/home_screen.dart';
+import '../../core/navigation/main_navigation_screen.dart';
 
 class VoxlySplashScreen extends StatefulWidget {
   const VoxlySplashScreen({super.key});
@@ -54,7 +54,7 @@ class _VoxlySplashScreenState extends State<VoxlySplashScreen>
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder<void>(
-        pageBuilder: (_, __, ___) => const HomeScreen(),
+        pageBuilder: (_, __, ___) => const MainNavigationScreen(),
         transitionDuration: const Duration(milliseconds: 350),
         reverseTransitionDuration: const Duration(milliseconds: 350),
         transitionsBuilder: (
