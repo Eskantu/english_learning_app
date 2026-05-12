@@ -1,0 +1,25 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run DEV",
+      "type": "shell",
+      "command": "dart run flutter_launcher_icons -f flutter_launcher_icons-dev.yaml; flutter run --flavor dev"
+    },
+    {
+      "label": "Clean project",
+      "type": "shell",
+      "command": "flutter clean; flutter pub get"
+    },
+    {
+      "label": "Build QA APK",
+      "type": "shell",
+      "command": "dart run flutter_launcher_icons -f flutter_launcher_icons-qa.yaml; flutter build apk --flavor qa --release"
+    },
+    {
+      "label": "Build PROD Bundle",
+      "type": "shell",
+      "command": "dart run flutter_launcher_icons -f flutter_launcher_icons-prod.yaml; flutter build appbundle --flavor production --release"
+    }
+  ]
+}

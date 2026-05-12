@@ -110,7 +110,7 @@ class _VoxlySplashScreenState extends State<VoxlySplashScreen>
               opacity: _fadeAnimation,
               child: ScaleTransition(
                 scale: _scaleAnimation,
-                child: Image.asset('assets/icon/app_icon.png', width: 140),
+                child: Image.asset('assets/icons/app_icon.png', width: 140),
               ),
             ),
           ),

@@ -19,6 +19,26 @@ android {
         jvmTarget = "11"
     }
 
+    flavorDimensions += "environment"
+
+productFlavors {
+    create("dev") {
+        dimension = "environment"
+        applicationIdSuffix = ".dev"
+        versionNameSuffix = "-dev"
+    }
+
+    create("qa") {
+        dimension = "environment"
+        applicationIdSuffix = ".qa"
+        versionNameSuffix = "-qa"
+    }
+
+    create("production") {
+        dimension = "environment"
+    }
+}
+
     defaultConfig {
         applicationId = "com.example.english_learning_ap"
         minSdk = 24
@@ -41,3 +61,4 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
+

@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Generated Android launcher icons (flavors)
+/android/app/src/*/res/mipmap-*/ic_launcher*
+/android/app/src/*/res/drawable-*/ic_launcher*
+/android/app/src/*/res/drawable-*/ic_launcher_foreground.png
+/android/app/src/*/res/values/ic_launcher_background.xml
+/android/app/src/*/res/values/colors.xml
