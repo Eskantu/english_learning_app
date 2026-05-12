@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_radius.dart';
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/widgets/app_surface_card.dart';
 import '../../../core/di/service_locator.dart';
 import '../../../features/learning/domain/entities/learning_item.dart';
 
@@ -63,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       initialTime: TimeOfDay(hour: _hour, minute: _minute),
     );
+    print('Picked time: ${picked?.format(context)}'); 
     if (picked == null) {
       return;
     }
@@ -104,13 +108,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _loading
                 ? const Center(child: CircularProgressIndicator())
                 : ListView(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
                   children: <Widget>[
                     _SettingsCard(
                       child: Row(
                         children: <Widget>[
                           const Icon(Icons.notifications_active_rounded),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -121,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: AppSpacing.xs),
                                 Text(
                                   'Enable daily learning reminders',
                                   style: theme.textTheme.bodyMedium,
@@ -136,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.sm + 6),
                     _SettingsCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +148,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           Row(
                             children: <Widget>[
                               const Icon(Icons.schedule_rounded),
-                              const SizedBox(width: 10),
+                              const SizedBox(width: AppSpacing.sm + 2),
                               Text(
                                 'Reminder time',
                                 style: theme.textTheme.titleMedium?.copyWith(
@@ -153,22 +157,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: AppSpacing.md),
                           InkWell(
                             onTap: _notificationsEnabled ? _pickTime : null,
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
+                                horizontal: AppSpacing.sm + 6,
+                                vertical: AppSpacing.md,
                               ),
                               decoration: BoxDecoration(
                                 color:
                                     _notificationsEnabled
                                         ? Colors.white
                                         : const Color(0xFFF3F3F3),
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                                 border: Border.all(
                                   color: const Color(0xFFDEE4EF),
                                 ),
@@ -195,12 +201,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: AppSpacing.sm + 6),
                     _SettingsCard(
                       child: Row(
                         children: <Widget>[
                           const Icon(Icons.calendar_today_rounded),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppSpacing.md),
                           Expanded(
                             child: Text(
                               _notificationsEnabled
@@ -231,19 +237,11 @@ class _SettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFEFF),
-        borderRadius: BorderRadius.circular(22),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x150C1A33),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      radius: AppRadius.xl,
+      color: const Color(0xFFFDFEFF),
+      shadowAlpha: 0.08,
       child: child,
     );
   }

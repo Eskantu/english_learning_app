@@ -8,17 +8,45 @@ class FlutterSpeechToTextService implements SpeechToTextService {
   FlutterSpeechToTextService(this._speech);
 
   final SpeechToText _speech;
+  bool _initialized = false;
+  bool _available = false;
+  Future<void>? _initializing;
+  Timer? _listenTimeout;
+
   @override
-  Future<void> initialize() async {
-    await _speech.initialize();
+  bool get isInitialized => _initialized;
+
+  @override
+  Future<void> initializeIfNeeded() async {
+    if (_initialized) {
+      return;
+    }
+    if (_initializing != null) {
+      await _initializing;
+      return;
+    }
+
+    _initializing = _doInitialize();
+    await _initializing;
+    _initializing = null;
+  }
+
+  Future<void> _doInitialize() async {
+    _available = await _speech.initialize();
+    _initialized = true;
+    print('Speech recognition initialized: $_available');
   }
 
   @override
   Future<String?> listenOnce() async {
-    final bool available = await _speech.initialize();
-    print('Speech recognition available: $available');
-    if (!available) {
+    await initializeIfNeeded();
+    if (!_available) {
+      print('Speech recognition not available');
       return null;
+    }
+
+    if (_speech.isListening) {
+      await _speech.stop();
     }
 
     final Completer<String?> completer = Completer<String?>();
@@ -36,7 +64,8 @@ class FlutterSpeechToTextService implements SpeechToTextService {
       pauseFor: const Duration(seconds: 2),
     );
 
-    Timer(const Duration(seconds: 9), () async {
+    _listenTimeout?.cancel();
+    _listenTimeout = Timer(const Duration(seconds: 9), () async {
       await _speech.stop();
       if (!completer.isCompleted) {
         completer.complete(
@@ -52,6 +81,17 @@ class FlutterSpeechToTextService implements SpeechToTextService {
 
   @override
   Future<void> stop() async {
+    _listenTimeout?.cancel();
+    _listenTimeout = null;
     await _speech.stop();
+  }
+
+  @override
+  Future<void> dispose() async {
+    _listenTimeout?.cancel();
+    _listenTimeout = null;
+    await _speech.stop();
+    _initialized = false;
+    _available = false;
   }
 }

@@ -5,12 +5,19 @@ class FakeSpeechToTextService implements SpeechToTextService {
       <Future<String?> Function()>[];
 
   int listenCount = 0;
+  bool _initialized = false;
 
   @override
-  Future<void> initialize() async {}
+  bool get isInitialized => _initialized;
+
+  @override
+  Future<void> initializeIfNeeded() async {
+    _initialized = true;
+  }
 
   @override
   Future<String?> listenOnce() async {
+    await initializeIfNeeded();
     listenCount++;
     if (_pendingResponses.isEmpty) {
       return null;
@@ -21,6 +28,11 @@ class FakeSpeechToTextService implements SpeechToTextService {
 
   @override
   Future<void> stop() async {}
+
+  @override
+  Future<void> dispose() async {
+    _initialized = false;
+  }
 
   void enqueueResult(String? text) {
     _pendingResponses.add(() async => text);
@@ -37,5 +49,6 @@ class FakeSpeechToTextService implements SpeechToTextService {
   void reset() {
     _pendingResponses.clear();
     listenCount = 0;
+    _initialized = false;
   }
 }

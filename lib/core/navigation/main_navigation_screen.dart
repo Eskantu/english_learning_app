@@ -10,6 +10,8 @@ import '../../features/pronunciation/presentation/screens/pronunciation_screen.d
 import '../../features/review/presentation/review_flow_launcher.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../di/service_locator.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_spacing.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -106,7 +108,7 @@ class _LearnTab extends StatelessWidget {
           backgroundColor: const Color(0xFFF5F7FF),
           appBar: AppBar(title: const Text('Learn')),
           body: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
@@ -124,7 +126,7 @@ class _LearnTab extends StatelessWidget {
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.lg),
                 Expanded(
                   child: _LearnActionCard(
                     title: 'Review',
@@ -159,23 +161,23 @@ class _LearnActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Icon(icon, size: 28),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 title,
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(subtitle, style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
@@ -210,7 +212,7 @@ class _ProfileTab extends StatelessWidget {
       ),
       body: Center(
         child: Container(
-          margin: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(AppSpacing.xl),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -218,7 +220,7 @@ class _ProfileTab extends StatelessWidget {
               end: Alignment.bottomRight,
               colors: <Color>[Color(0xFFEEF3FF), Color(0xFFE7F5EE)],
             ),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -228,14 +230,14 @@ class _ProfileTab extends StatelessWidget {
                 size: 42,
                 color: Color(0xFF3F5873),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Your learning profile',
                 style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Configure reminders from the settings icon.',
                 textAlign: TextAlign.center,

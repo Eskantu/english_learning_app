@@ -1,5 +1,7 @@
 abstract class SpeechToTextService {
-  Future<void> initialize();
+  bool get isInitialized;
+  Future<void> initializeIfNeeded();
   Future<String?> listenOnce();
   Future<void> stop();
+  Future<void> dispose();
 }

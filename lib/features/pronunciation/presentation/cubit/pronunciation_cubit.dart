@@ -128,8 +128,8 @@ class PronunciationCubit extends Cubit<PronunciationState> {
 
   @override
   Future<void> close() async {
-    await _speechToTextService.stop();
-    await _textToSpeechService.stop();
+    await _speechToTextService.dispose();
+    await _textToSpeechService.dispose();
     return super.close();
   }
 }

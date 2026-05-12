@@ -62,9 +62,7 @@ class ServiceLocator {
     notificationService =
         FlutterNotificationService(FlutterLocalNotificationsPlugin());
 
-    // These services touch platform channels and need explicit initialization.
-    await textToSpeechService.initialize();
-    await speechToTextService.initialize();
+    // Keep startup lightweight; audio services are initialized lazily on demand.
     await notificationService.initialize();
     pronunciationEvaluator = PronunciationEvaluator();
   }

@@ -21,6 +21,10 @@ class FlutterNotificationService implements NotificationService {
   static const String _notificationsEnabledKey = 'notifications_enabled';
   static const String _notificationHourKey = 'notification_hour';
   static const String _notificationMinuteKey = 'notification_minute';
+  static const String _notificationChannelId = 'review_channel';
+  static const String _notificationChannelName = 'Review reminders';
+  static const String _notificationChannelDescription =
+      'Daily reminders for English review practice';
   static const int _defaultHour = 20;
   static const int _defaultMinute = 0;
 
@@ -28,12 +32,20 @@ class FlutterNotificationService implements NotificationService {
   final StreamController<String> _tapController =
       StreamController<String>.broadcast();
   late final Box<dynamic> _settingsBox;
+  bool _canScheduleExact = false;
 
   @override
   Stream<String> get onNotificationTap => _tapController.stream;
 
   @override
   Future<void> initialize() async {
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      _notificationChannelId,
+      _notificationChannelName,
+      description: _notificationChannelDescription,
+      importance: Importance.high,
+    );
+
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -41,7 +53,7 @@ class FlutterNotificationService implements NotificationService {
       android: androidSettings,
     );
 
-    await _plugin.initialize(
+    bool? result = await _plugin.initialize(
       settings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         // Forward payload taps to the app-level listener.
@@ -51,18 +63,39 @@ class FlutterNotificationService implements NotificationService {
         }
       },
     );
+    if (result != true) {
+      print(
+        'Warning: Failed to initialize notifications plugin. Reminders will not work.',
+      );
+    }
 
     final AndroidFlutterLocalNotificationsPlugin? androidImpl =
         _plugin
             .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin
             >();
-    await androidImpl?.requestNotificationsPermission();
+    bool? permissionGranted =
+        await androidImpl?.requestNotificationsPermission();
+    bool? exactAlarmPermissionGranted =
+        await androidImpl?.requestExactAlarmsPermission();
+    print(
+      'Notification permission granted: $permissionGranted, exact alarm permission granted: $exactAlarmPermissionGranted',
+    );
+    await androidImpl?.createNotificationChannel(channel);
+    if (permissionGranted != true) {
+      print(
+        'Warning: Notification permissions not granted. Reminders will not work.',
+      );
+    }
+    final bool? canScheduleExact =
+        await androidImpl?.canScheduleExactNotifications();
+    _canScheduleExact = canScheduleExact ?? false;
+    print('canScheduleExact: $canScheduleExact');
 
     tz.initializeTimeZones();
     final String timezoneName = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(timezoneName));
-
+    print('Notifications initialized with timezone: $timezoneName');
     _settingsBox = await Hive.openBox<dynamic>(_settingsBoxName);
     await _ensureDefaults();
   }
@@ -92,19 +125,21 @@ class FlutterNotificationService implements NotificationService {
   @override
   Future<void> scheduleDailyReviewReminder({required int dueCount}) async {
     final bool notificationsEnabled = await getNotificationsEnabled();
-
-    // No due items means no reminder should be shown.
-    if (!notificationsEnabled || dueCount <= 0) {
+    print(
+      'Scheduling daily review reminder. Due count: $dueCount, notifications enabled: $notificationsEnabled',
+    );
+    // Only disable if user explicitly turned notifications off.
+    if (!notificationsEnabled) {
       await _plugin.cancel(_dailyReminderId);
       return;
     }
 
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-          'review_channel',
-          'Review reminders',
-          channelDescription: 'Daily reminders for English review practice',
-          importance: Importance.high,
+          _notificationChannelId,
+          _notificationChannelName,
+          channelDescription: _notificationChannelDescription,
+          importance: Importance.max,
           priority: Priority.high,
         );
 
@@ -115,16 +150,49 @@ class FlutterNotificationService implements NotificationService {
     final int hour = await getReminderHour();
     final int minute = await getReminderMinute();
     final tz.TZDateTime scheduleAt = _nextInstanceOfTime(hour, minute);
+    final AndroidScheduleMode scheduleMode =
+        _canScheduleExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle;
+    final String body =
+        dueCount > 0
+            ? 'Tienes $dueCount frases pendientes para revisar hoy.'
+            : 'Abre Voxly para revisar tu progreso de ingles de hoy.';
 
+    print(
+      'Scheduling reminder for: $scheduleAt (local timezone) with due count: $dueCount and mode: $scheduleMode',
+    );
+
+    _plugin.show(0, 'Instant notification', body, notificationDetails);
+
+    // Repeat daily at the configured local wall-clock time.
     await _plugin.zonedSchedule(
       _dailyReminderId,
       'Hora de practicar ingles',
-      'Tienes $dueCount frases pendientes para revisar hoy.',
+      body,
       scheduleAt,
       notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: scheduleMode,
       matchDateTimeComponents: DateTimeComponents.time,
       payload: reviewPayload,
+    );
+    // tz.TZDateTime now = tz.TZDateTime.now(tz.local);
+    // tz.TZDateTime scheduleAt2 = now.add(const Duration(seconds: 10));
+    // _plugin.zonedSchedule(
+    //   _dailyReminderId,
+    //   'Hora de practicar ingles',
+    //   body,
+    //   scheduleAt2,
+    //   notificationDetails,
+    //   androidScheduleMode: scheduleMode,
+    //   matchDateTimeComponents: DateTimeComponents.time,
+    //   payload: reviewPayload,
+    // );
+
+    final pending = await _plugin.pendingNotificationRequests();
+    // For debugging: log all pending notifications after scheduling.
+    print(
+      'Scheduled notifications: ${pending.map((e) => 'ID: ${e.id}, Title: ${e.title}, Payload: ${e.payload}').join('; ')}',
     );
   }
 
@@ -141,6 +209,7 @@ class FlutterNotificationService implements NotificationService {
     if (!scheduled.isAfter(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }
+    print('Next instance of time for $hour:$minute is $scheduled');
     return scheduled;
   }
 
@@ -169,6 +238,7 @@ class FlutterNotificationService implements NotificationService {
 
   @override
   Future<void> setReminderTime({required int hour, required int minute}) async {
+    print('Setting reminder time to $hour:$minute');
     await _settingsBox.put(_notificationHourKey, hour);
     await _settingsBox.put(_notificationMinuteKey, minute);
   }
@@ -177,8 +247,11 @@ class FlutterNotificationService implements NotificationService {
   Future<int> getPendingReminderCount() async {
     final List<PendingNotificationRequest> pending =
         await _plugin.pendingNotificationRequests();
-    return pending
-        .where((PendingNotificationRequest e) => e.id == _dailyReminderId)
-        .length;
+    int pendingCount =
+        pending
+            .where((PendingNotificationRequest e) => e.id == _dailyReminderId)
+            .length;
+    print('Pending reminders: $pendingCount');
+    return pendingCount;
   }
 }
